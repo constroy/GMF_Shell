@@ -1,2 +1,2 @@
-# GMF-5 #
-A simple Shell for learning
+# GMF_Shell #
+A simple shell for learning
