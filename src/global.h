@@ -13,6 +13,7 @@ extern "C" {
 
     #include <stdio.h>
     #include <stdlib.h>
+    #include <string.h>
     
     typedef struct SimpleCmd {
         int isBack;     // 是否后台运行

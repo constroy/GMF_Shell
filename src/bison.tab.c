@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.0.2.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.4"
+#define YYBISON_VERSION "3.0.2"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -89,7 +89,10 @@
 # define YYERROR_VERBOSE 0
 #endif
 
-
+/* In a future release of Bison, this section will be replaced
+   by #include "bison.tab.h".  */
+#ifndef YY_YY_BISON_TAB_H_INCLUDED
+# define YY_YY_BISON_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -103,7 +106,8 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    STRING = 258
+    STRING = 258,
+    EOL = 259
   };
 #endif
 
@@ -119,11 +123,11 @@ extern YYSTYPE yylval;
 
 int yyparse (void);
 
-
+#endif /* !YY_YY_BISON_TAB_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 127 "bison.tab.c" /* yacc.c:358  */
+#line 131 "bison.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -365,10 +369,10 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  8
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   9
+#define YYLAST   8
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  7
+#define YYNTOKENS  8
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  9
 /* YYNRULES -- Number of rules.  */
@@ -379,7 +383,7 @@ union yyalloc
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   258
+#define YYMAXUTOK   259
 
 #define YYTRANSLATE(YYX)                                                \
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -391,13 +395,10 @@ static const yytype_uint8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     4,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     5,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       5,     2,     6,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       6,     2,     7,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -413,7 +414,10 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     1,     2,     3
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     1,     2,     3,     4
 };
 
 #if YYDEBUG
@@ -430,8 +434,8 @@ static const yytype_uint8 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "STRING", "'&'", "'<'", "'>'", "$accept",
-  "line", "command", "fgCommand", "simpleCmd", "progInvocation",
+  "$end", "error", "$undefined", "STRING", "EOL", "'&'", "'<'", "'>'",
+  "$accept", "line", "command", "fgCommand", "simpleCmd", "progInvocation",
   "inputRedirect", "outputRedirect", "args", YY_NULLPTR
 };
 #endif
@@ -441,14 +445,14 @@ static const char *const yytname[] =
    (internal) symbol number NUM (which must be that of a token).  */
 static const yytype_uint16 yytoknum[] =
 {
-       0,   256,   257,   258,    38,    60,    62
+       0,   256,   257,   258,   259,    38,    60,    62
 };
 # endif
 
-#define YYPACT_NINF -4
+#define YYPACT_NINF -5
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-4)))
+  (!!((Yystate) == (-5)))
 
 #define YYTABLE_NINF -1
 
@@ -459,8 +463,8 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      -3,    -4,     1,    -4,    -2,    -4,    -1,     0,    -4,    -4,
-       2,     3,    -4,    -4,     4,    -4,    -4
+      -3,    -5,     1,    -5,    -2,    -5,    -4,     2,    -5,    -5,
+       3,     0,    -5,    -5,     5,    -5,    -5
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -475,7 +479,7 @@ static const yytype_uint8 yydefact[] =
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -4,    -4,    -4,    -4,    -4,    -4,    -4,    -4,    -4
+      -5,    -5,    -5,    -5,    -5,    -5,    -5,    -5,    -5
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
@@ -489,27 +493,27 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-       1,     8,     9,    12,    10,    13,     0,    16,     0,    14
+       1,     8,    10,     9,     0,    12,    13,    14,    16
 };
 
 static const yytype_int8 yycheck[] =
 {
-       3,     0,     4,     3,     5,     3,    -1,     3,    -1,     6
+       3,     0,     6,     5,    -1,     3,     3,     7,     3
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     3,     8,     9,    10,    11,    12,    15,     0,     4,
-       5,    13,     3,     3,     6,    14,     3
+       0,     3,     9,    10,    11,    12,    13,    16,     0,     5,
+       6,    14,     3,     3,     7,    15,     3
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,     7,     8,     8,     9,     9,    10,    11,    12,    13,
-      13,    14,    14,    15,    15
+       0,     8,     9,     9,    10,    10,    11,    12,    13,    14,
+      14,    15,    15,    16,    16
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
@@ -1195,11 +1199,11 @@ yyreduce:
         case 3:
 #line 14 "bison.y" /* yacc.c:1646  */
     {   execute();  commandDone = 1;   }
-#line 1199 "bison.tab.c" /* yacc.c:1646  */
+#line 1203 "bison.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1203 "bison.tab.c" /* yacc.c:1646  */
+#line 1207 "bison.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1433,6 +1437,7 @@ yyreturn:
 /****************************************************************
                   词法分析函数
 ****************************************************************/
+/*
 int yylex(){
     //这个函数用来检查inputBuff是否满足lex的定义，实际上并不进行任何操作，初期可略过不看
     int flag;
@@ -1471,10 +1476,11 @@ int yylex(){
         return 0;
     }
 }
-
+*/
 /****************************************************************
                   错误信息执行函数
 ****************************************************************/
+
 void yyerror()
 {
     printf("你输入的命令不正确，请重新输入！\n");
@@ -1493,7 +1499,7 @@ int main(int argc, char** argv) {
     printf("yourname@computer:%s$ ", get_current_dir_name()); //打印提示符信息
 
     while(1){
-        i = 0;
+       	i = 0;
         while((c = getchar()) != '\n'){ //读入一行命令
             inputBuff[i++] = c;
         }
@@ -1501,7 +1507,10 @@ int main(int argc, char** argv) {
 
         len = i;
         offset = 0;
-        
+  	
+		
+	yy_scan_string(inputBuff);
+
         yyparse(); //调用语法分析函数，该函数由yylex()提供当前输入的单词符号
 
         if(commandDone == 1){ //命令已经执行完成后，添加历史记录信息
