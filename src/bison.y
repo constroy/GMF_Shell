@@ -7,7 +7,7 @@
     int offset, len, commandDone;
 %}
 
-%token STRING EOL
+%token STRING
 
 %%
 line            :   /* empty */
