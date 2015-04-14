@@ -7,6 +7,5 @@ execute.o : execute.c global.h
 bison :	analysis.l bison.y
 	bison -d bison.y
 	flex analysis.l
-	
 clean :
-	rm user-sh bison.tab.o execute.o bison.tab.c
+	rm user-sh bison.tab.o execute.o bison.tab.c bison.tab.h lex.yy.c lex.yy.o
