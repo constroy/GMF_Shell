@@ -22,6 +22,12 @@ extern "C" {
         char *output;   // 输出重定向
     } SimpleCmd;
 
+    typedef struct ComplexCmd {
+		int isBack;
+		int num;
+		SimpleCmd **cmds;
+	} ComplexCmd;
+
     typedef struct History {
         int start;                    //首位置
         int end;                      //末位置
