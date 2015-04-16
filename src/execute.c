@@ -184,6 +184,42 @@ void ctrl_Z(){
     fgPid = 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////////
+
+/*组合键命令ctrl+c*/
+void ctrl_C(){
+    Job *now = NULL;
+    
+    if(fgPid == 0){ //前台没有作业则直接返回
+        return;
+    }
+    
+    //SIGCHLD信号产生自ctrl+c
+    ingnore = 1;
+    
+	now = head;
+	while(now != NULL && now->pid != fgPid)
+		now = now->next;
+    
+    if(now == NULL){ //未找到前台作业，则根据fgPid添加前台作业
+        now = addJob(fgPid);
+    }
+    
+	//修改前台作业的状态及相应的命令格式，并打印提示信息
+    strcpy(now->state, KILLED); 
+    now->cmd[strlen(now->cmd)] = '&';
+    now->cmd[strlen(now->cmd) + 1] = '\0';
+    printf("[%d]\t%s\t\t%s\n", now->pid, now->state, now->cmd);
+    
+	//发送SIGSTOP信号给正在前台运作的工作，将其
+    kill(fgPid, SIGKILL);
+    fgPid = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 /*fg命令*/
 void fg_exec(int pid){    
     Job *now = NULL; 
@@ -207,6 +243,7 @@ void fg_exec(int pid){
     strcpy(now->state, RUNNING);
     
     signal(SIGTSTP, ctrl_Z); //设置signal信号，为下一次按下组合键Ctrl+Z做准备
+    signal(SIGINT, ctrl_C); //设置signal信号，为下一次按下组合键Ctrl+c做准备(修改的)
     i = strlen(now->cmd) - 1;
     while(i >= 0 && now->cmd[i] != '&')
 		i--;
@@ -319,6 +356,8 @@ void init(){
     action.sa_flags = SA_SIGINFO;
     sigaction(SIGCHLD, &action, NULL);
     signal(SIGTSTP, ctrl_Z);
+    signal(SIGINT, ctrl_C);
+    
 }
 
 /*******************************************************
@@ -658,9 +697,9 @@ void executeComplexCmd(ComplexCmd *cmd) {
                      命令执行接口
 ********************************************************/
 void execute(){
-    //SimpleCmd *cmd = handleSimpleCmdStr(0, strlen(inputBuff));
-    //execSimpleCmd(cmd);
-    ComplexCmd *cmd = handleComplexCmdStr(0,strlen(inputBuff));
-    if (cmd->num) executeComplexCmd(cmd);
+    SimpleCmd *cmd = handleSimpleCmdStr(0, strlen(inputBuff));
+    execSimpleCmd(cmd);
+    //ComplexCmd *cmd = handleComplexCmdStr(0,strlen(inputBuff));
+    //executeComplexCmd(cmd);
     free(cmd);
 }
