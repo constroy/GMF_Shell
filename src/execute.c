@@ -518,22 +518,22 @@ void execOuterCmd(SimpleCmd *cmd){
             if(cmd->input != NULL){ //存在输入重定向
                 if((pipeIn = open(cmd->input, O_RDONLY, S_IRUSR|S_IWUSR)) == -1){
                     printf("不能打开文件 %s！\n", cmd->input);
-                    return;
+                    exit(0);
                 }
                 if(dup2(pipeIn, 0) == -1){
                     printf("重定向标准输入错误！\n");
-                    return;
+                    exit(0);
                 }
             }
             
             if(cmd->output != NULL){ //存在输出重定向
                 if((pipeOut = open(cmd->output, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)) == -1){
                     printf("不能打开文件 %s！\n", cmd->output);
-                    return ;
+                    exit(0);
                 }
                 if(dup2(pipeOut, 1) == -1){
                     printf("重定向标准输出错误！\n");
-                    return;
+                    exit(0);
                 }
             }
             
@@ -545,15 +545,16 @@ void execOuterCmd(SimpleCmd *cmd){
                 printf("[%d]\t%s\t\t%s\n", getpid(), RUNNING, inputBuff);
                 kill(getppid(), SIGUSR1);
             }
-            
+            //puts("000child");
             justArgs(cmd->args[0]);
+            //puts("111child");
             if(execv(cmdBuff, cmd->args) < 0){ //执行命令
                 printf("execv failed!\n");
-                return;
+                exit(0);
             }
         }
 		else{ //父进程
-            if(cmd ->isBack){ //后台命令             
+            if(cmd->isBack){ //后台命令             
                 fgPid = 0; //pid置0，为下一命令做准备
                 addJob(pid); //增加新的作业
                 kill(pid, SIGUSR1); //子进程发信号，表示作业已加入
@@ -564,7 +565,10 @@ void execOuterCmd(SimpleCmd *cmd){
                 goon = 0;
             }else{ //非后台命令
                 fgPid = pid;
+                //printf("ffpid:%d\n",pid);
                 waitpid(pid, NULL, 0);
+               //printf("wwpid:%d\n",pid);
+                
             }
 		}
     }else{ //命令不存在
@@ -640,6 +644,7 @@ void execSimpleCmd(SimpleCmd *cmd){
     }
 }
 
+//preprocess cmds by constroy
 void *handleComplexCmdStr(int begin,int end) {
 	int i,j,cnt;
 	ComplexCmd *cmd = (ComplexCmd*)malloc(sizeof(ComplexCmd));
@@ -659,36 +664,63 @@ void *handleComplexCmdStr(int begin,int end) {
 	}
 	cmd->cmds[cnt++] = handleSimpleCmdStr(i,j);
 	cmd->isBack = cmd->cmds[cnt-1]->isBack;
+	for (i = 0; i<cmd->num; ++i) {
+		cmd->cmds[i]->isBack = cmd->isBack;
+	}
 	return cmd;
 }
 
-//execute a set of CMDs
+//execute a set of CMDs by constroy
 void executeComplexCmd(ComplexCmd *cmd) {
 	int i;
-	int pid
-	int pfd[2];
-	pfd[0] = 0;
-	pid = fork();
-	if (pid <0 ) {
-		perror("fork failed");
-		return;
-	}
-	if (!pid) {
-		execSimpleCmd(cmd->cmds[1]);
-	}
-	for (i = 1; i<cmd->num; ++i) {
+	pid_t pid;
+	int pfd[2][2]={{0,1},{0,1}};
+	
+	for (i = 0; i<cmd->num; ++i) {
+		if (i == cmd->num - 1) {
+			pfd[1][1] = 1;
+		}
+		else {
+			if (pipe(pfd[1]) == -1) {
+				perror("pipe failed");
+				return;
+			}
+		}
 		pid = fork();
-		if (pid <0 ) {
+		//printf("fpid:%d\n",pid);
+		if (pid < 0) {
 			perror("fork failed");
-            return;
-		}
-		if (pid) {
-			
+			return;
+		} else if (pid) {
+			if (pfd[0][0] != 0) close(pfd[0][0]);
+			if (pfd[0][1] != 1) close(pfd[0][1]);
+			pfd[0][0]=pfd[1][0];
+			pfd[0][1]=pfd[1][1];
 		} else {
-			close(pfd[0]);
+			dup2(pfd[0][0],0);
+			dup2(pfd[1][1],1);
+			execSimpleCmd(cmd->cmds[i]);
+			close(pfd[0][0]);
+			close(pfd[1][1]);
+			exit(0);
 		}
-		
 	}
+	//puts("1!!!");
+	while ((pid=wait(NULL))>0) {
+		//printf("wpid:%d\n",pid);
+		continue;
+	}
+	//puts("2!!!");
+	
+	/*
+	while ((i=read(pfd[0][0],buff,sizeof(buff)))>0) {
+		write(1,buff,i);
+	}
+	*/
+	//puts("!!!");while (1) sleep(10);
+	//write(1,"!!!",3);
+	//printf("pfd: %d\n",pfd[0][1]);
+	
 	for (i = 0; i<cmd->num; ++i) {
 		free(cmd->cmds[i]);
 	}
@@ -697,9 +729,9 @@ void executeComplexCmd(ComplexCmd *cmd) {
                      命令执行接口
 ********************************************************/
 void execute(){
-    SimpleCmd *cmd = handleSimpleCmdStr(0, strlen(inputBuff));
-    execSimpleCmd(cmd);
-    //ComplexCmd *cmd = handleComplexCmdStr(0,strlen(inputBuff));
-    //executeComplexCmd(cmd);
-    free(cmd);
+	//SimpleCmd *cmd = handleSimpleCmdStr(0, strlen(inputBuff));
+	//execSimpleCmd(cmd);
+	ComplexCmd *cmd = handleComplexCmdStr(0,strlen(inputBuff));
+	executeComplexCmd(cmd);
+	free(cmd);//puts("!!!");while (1);
 }
