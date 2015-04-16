@@ -626,8 +626,30 @@ void *handleComplexCmdStr(int begin,int end) {
 //execute a set of CMDs
 void executeComplexCmd(ComplexCmd *cmd) {
 	int i;
-
-	
+	int pid
+	int pfd[2];
+	pfd[0] = 0;
+	pid = fork();
+	if (pid <0 ) {
+		perror("fork failed");
+		return;
+	}
+	if (!pid) {
+		execSimpleCmd(cmd->cmds[1]);
+	}
+	for (i = 1; i<cmd->num; ++i) {
+		pid = fork();
+		if (pid <0 ) {
+			perror("fork failed");
+            return;
+		}
+		if (pid) {
+			
+		} else {
+			close(pfd[0]);
+		}
+		
+	}
 	for (i = 0; i<cmd->num; ++i) {
 		free(cmd->cmds[i]);
 	}
@@ -639,6 +661,6 @@ void execute(){
     //SimpleCmd *cmd = handleSimpleCmdStr(0, strlen(inputBuff));
     //execSimpleCmd(cmd);
     ComplexCmd *cmd = handleComplexCmdStr(0,strlen(inputBuff));
-    executeComplexCmd(cmd);
+    if (cmd->num) executeComplexCmd(cmd);
     free(cmd);
 }
