@@ -643,6 +643,7 @@ void *handleComplexCmdStr(int begin,int end) {
 	cmd->cmds[cnt++] = handleSimpleCmdStr(i,j);
 	cmd->isBack = cmd->cmds[cnt-1]->isBack;
 	for (i = 0; i<cmd->num; ++i) {
+		if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) exit(0);//exit
 		cmd->cmds[i]->isBack = cmd->isBack;
 	}
 	return cmd;
@@ -656,7 +657,7 @@ void executeComplexCmd(ComplexCmd *cmd) {
 	
 	cidCnt = 0;
 	for (i = 0; i<cmd->num; ++i) {
-		if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) exit(0);//exit
+
 		if (i == cmd->num - 1) {
 			pfd[1][1] = 1;
 		}
