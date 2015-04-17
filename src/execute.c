@@ -578,6 +578,7 @@ void execOuterCmd(SimpleCmd *cmd){
             if(cmd->isBack){ //后台命令             
                 fgPid = 0; //pid置0，为下一命令做准备
                 addJob(pid); //增加新的作业
+		sleep(1);
                 kill(pid, SIGUSR1); //子进程发信号，表示作业已加入
                 
                 //等待子进程输出
