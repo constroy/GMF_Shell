@@ -19,8 +19,8 @@ int goon = 0, ingnore = 0;       //用于设置signal信号量
 char *envPath[10], cmdBuff[40];  //外部命令的存放路径及读取外部命令的缓冲空间
 History history;                 //历史命令
 Job *head = NULL;                //作业头指针
-pid_t fgPid;                     //当前前台作业的进程号
-
+pid_t fgPid,fgCid[100];          //当前前台作业的进程号
+int cidCnt;
 /*******************************************************
                   工具以及辅助方法
 ********************************************************/
@@ -46,6 +46,7 @@ int exists(char *cmdFile){
     return 0; 
 }
 
+
 /*将字符串转换为整型的Pid*/
 int str2Pid(char *str, int start, int end){
     int i, j;
@@ -62,6 +63,7 @@ int str2Pid(char *str, int start, int end){
     
     return atoi(chs);
 }
+
 
 /*调整部分外部命令的格式*/
 void justArgs(char *str){
@@ -181,6 +183,8 @@ void ctrl_Z(){
     printf("[%d]\t%s\t\t%s\n", now->pid, now->state, now->cmd);
     
 	//发送SIGSTOP信号给正在前台运作的工作，将其停止
+    kill(fgPid, SIGTSTP);
+    sleep(1);
     kill(fgPid, SIGSTOP);
     fgPid = 0;
 }
@@ -189,28 +193,12 @@ void ctrl_Z(){
 
 /*组合键命令ctrl+c*/
 void ctrl_C(){
-    Job *now = NULL;
-    
     if(fgPid == 0){ //前台没有作业则直接返回
         return;
     }
     
     //SIGCHLD信号产生自ctrl+c
     ingnore = 1;
-    
-	now = head;
-	while(now != NULL && now->pid != fgPid)
-		now = now->next;
-    
-    if(now == NULL){ //未找到前台作业，则根据fgPid添加前台作业
-        now = addJob(fgPid);
-    }
-    
-	//修改前台作业的状态及相应的命令格式，并打印提示信息
-    strcpy(now->state, KILLED); 
-    now->cmd[strlen(now->cmd)] = '&';
-    now->cmd[strlen(now->cmd) + 1] = '\0';
-    printf("[%d]\t%s\t\t%s\n", now->pid, now->state, now->cmd);
     
 	//发送SIGSTOP信号给正在前台运作的工作，将其
     kill(fgPid, SIGKILL);
@@ -250,8 +238,11 @@ void fg_exec(int pid){
 		i--;
     now->cmd[i] = '\0';
     
-    printf("%s\n", now->cmd);
-    kill(now->pid, SIGCONT); //向对象作业发送SIGCONT信号，使其运行
+    printf("%s %d\n", now->cmd,now->pid);
+
+    kill(now->pid + 1, SIGCONT);//向对象作业发送SIGCONT信号，使其运行
+    kill(now->pid, SIGUSR2);
+    
     waitpid(fgPid, NULL, 0); //父进程等待前台进程的运行
 }
 
@@ -274,8 +265,10 @@ void bg_exec(int pid){
     
     strcpy(now->state, RUNNING); //修改对象作业的状态
     printf("[%d]\t%s\t\t%s\n", now->pid, now->state, now->cmd);
+
+    kill(now->pid + 1, SIGCONT);//向对象作业发送SIGCONT信号，使其运行
+    kill(now->pid, SIGUSR2);
     
-    kill(now->pid, SIGCONT); //向对象作业发送SIGCONT信号，使其运行
 }
 
 /*******************************************************
@@ -527,72 +520,40 @@ SimpleCmd* handleSimpleCmdStr(int begin, int end){
 ********************************************************/
 /*执行外部命令*/
 void execOuterCmd(SimpleCmd *cmd){
-    pid_t pid;
     int pipeIn, pipeOut;
     
-    if(exists(cmd->args[0])){ //命令存在
-
-        if((pid = fork()) < 0){
-            perror("fork failed");
-            return;
-        }
-        
-        if(pid == 0){ //子进程
-            if(cmd->input != NULL){ //存在输入重定向
-                if((pipeIn = open(cmd->input, O_RDONLY, S_IRUSR|S_IWUSR)) == -1){
-                    fprintf(stderr, "不能打开文件%s！\n", cmd->input);
-                    exit(errno);
-                }
-                if(dup2(pipeIn, 0) == -1){
-                    perror("重定向标准输入错误！");
-                    exit(errno);
-                }
-            }
-            
-            if(cmd->output != NULL){ //存在输出重定向
-                if((pipeOut = open(cmd->output, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)) == -1){
-                    fprintf(stderr, "不能打开文件%s！\n", cmd->output);
-                    exit(errno);
-                }
-                if(dup2(pipeOut, 1) == -1){
-                    perror("重定向标准输出错误！");
-                    exit(errno);
-                }
-            }
-            
-            if(cmd->isBack){ //若是后台运行命令，等待父进程增加作业
-                signal(SIGUSR1, setGoon); //收到信号，setGoon函数将goon置1，以跳出下面的循环
-                while(goon == 0) ; //等待父进程SIGUSR1信号，表示作业已加到链表中
-                goon = 0; //置0，为下一命令做准备
-                
-                printf("[%d]\t%s\t\t%s\n", getpid(), RUNNING, inputBuff);
-                kill(getppid(), SIGUSR1);
-            }
-            justArgs(cmd->args[0]);
-            if(execv(cmdBuff, cmd->args) < 0){ //执行命令
-                perror("execv failed!");
-                exit(errno);
-            }
-        }
-		else{ //父进程
-            if(cmd->isBack){ //后台命令             
-                fgPid = 0; //pid置0，为下一命令做准备
-                addJob(pid); //增加新的作业
-				sleep(1);
-                kill(pid, SIGUSR1); //子进程发信号，表示作业已加入
-                
-                //等待子进程输出
-                signal(SIGUSR1, setGoon);
-                while(goon == 0) ;
-                goon = 0;
-            }else{ //非后台命令
-                fgPid = pid;
-                waitpid(pid, NULL, 0); 
-            }
+    if(exists(cmd->args[0]) == 0){ //命令不存在
+		fprintf(stderr, "找不到命令 %s\n", inputBuff);
+		exit(errno);
+	}
+	
+	if(cmd->input != NULL){ //存在输入重定向
+		if((pipeIn = open(cmd->input, O_RDONLY, S_IRUSR|S_IWUSR)) == -1){
+			fprintf(stderr, "不能打开文件%s！\n", cmd->input);
+			exit(errno);
 		}
-    }else{ //命令不存在
-        printf("找不到命令 %s\n", inputBuff);
-    }
+		if(dup2(pipeIn, 0) == -1){
+			perror("重定向标准输入错误！");
+			exit(errno);
+		}
+	}
+	
+	if(cmd->output != NULL){ //存在输出重定向
+		if((pipeOut = open(cmd->output, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)) == -1){
+			fprintf(stderr, "不能打开文件%s！\n", cmd->output);
+			exit(errno);
+		}
+		if(dup2(pipeOut, 1) == -1){
+			perror("重定向标准输出错误！");
+			exit(errno);
+		}
+	}
+	
+	justArgs(cmd->args[0]);
+	if(execv(cmdBuff, cmd->args) < 0){ //执行命令
+		perror("execv failed!");
+		exit(errno);
+	}
 }
 
 /*执行命令*/
@@ -692,62 +653,92 @@ void executeComplexCmd(ComplexCmd *cmd) {
 	int i;
 	pid_t pid;
 	int pfd[2][2]={{0,1},{0,1}};
-
-	if ((pid = fork()) < 0) {
-		perror("fork failed");
-		exit(errno);
-    }
-    if (pid)
-	{
-		if (cmd->isBack) {
-			signal(SIGUSR1,setGoon);
-			while(goon == 0);
-			kill(getppid(), SIGUSR1);
+	
+	cidCnt = 0;
+	for (i = 0; i<cmd->num; ++i) {
+		if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) exit(0);//exit
+		if (i == cmd->num - 1) {
+			pfd[1][1] = 1;
 		}
-		for (i = 0; i<cmd->num; ++i) {
-			if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) exit(0);//exit
-			if (i == cmd->num - 1) {
-				pfd[1][1] = 1;
-			}
-			else {
-				if (pipe(pfd[1]) == -1) {
-					perror("pipe failed");
-					exit(errno);
-				}
-			}
-			pid = fork();
-			if (pid < 0) {
-				perror("fork failed");
+		else {
+			if (pipe(pfd[1]) == -1) {
+				perror("pipe failed");
 				exit(errno);
-			} else if (pid) {
-				if (pfd[0][0] != 0) close(pfd[0][0]);
-				if (pfd[1][1] != 1) close(pfd[1][1]);
-				pfd[0][0]=pfd[1][0];
-			} else {
-				dup2(pfd[0][0],0);
-				dup2(pfd[1][1],1);
-				execSimpleCmd(cmd->cmds[i]);
-				close(pfd[0][0]);
-				close(pfd[1][1]);
-				exit(0);
 			}
 		}
-		if (pfd[0][0] != 0) close(pfd[0][0]);
-		//wait for all child processes to exit
-		while ((pid=wait(NULL))>0);
-	} else {
-		
+		pid = fork();
+		if (pid < 0) {
+			perror("fork failed");
+			exit(errno);
+		} else if (pid) {
+			fgCid[cidCnt++] = pid;
+			if (pfd[0][0] != 0) close(pfd[0][0]);
+			if (pfd[1][1] != 1) close(pfd[1][1]);
+			pfd[0][0]=pfd[1][0];
+		} else {
+			dup2(pfd[0][0],0);
+			dup2(pfd[1][1],1);
+			execSimpleCmd(cmd->cmds[i]);
+			close(pfd[0][0]);
+			close(pfd[1][1]);
+			exit(0);
+		}
 	}
-	//free *cmds[]
+	if (pfd[0][0] != 0) close(pfd[0][0]);
+	//wait for all child processes to exit
+	while ((pid=wait(NULL))>0);
+	//free cmds[]
 	for (i = 0; i<cmd->num; ++i) free(cmd->cmds[i]);
+}
+void contFg();
+void stopFg()
+{
+	int i;
+	for (i=0; i<cidCnt; ++i) kill(fgCid[i], SIGSTOP);
+}
+void contFg()
+{
+	int i;
+	for (i=0; i<cidCnt; ++i) kill(fgCid[i], SIGCONT);
 }
 /*******************************************************
                      命令执行接口
 ********************************************************/
 void execute(){
-	//SimpleCmd *cmd = handleSimpleCmdStr(0, strlen(inputBuff));
-	//execSimpleCmd(cmd);
 	ComplexCmd *cmd = handleComplexCmdStr(0,strlen(inputBuff));
-	executeComplexCmd(cmd);
+	pid_t pid = fork();
+	if (pid < 0) {
+		perror("fork failed");
+		exit(errno);
+    }
+    if (pid) {
+		if(cmd->isBack) { //后台命令             
+			fgPid = 0; //pid置0，为下一命令做准备
+			addJob(pid+1); //增加新的作业
+			signal(SIGUSR1,setGoon);
+			sleep(1);
+			kill(pid,SIGUSR1); //子进程发信号，表示作业已加入
+			//等待子进程
+			while (goon == 0);
+			goon = 0;
+		} else { //非后台命令
+			fgPid = pid;
+			waitpid(pid,NULL,0);
+		}
+	} else {
+		cidCnt = 0;
+		if (cmd->isBack) {
+			signal(SIGUSR1,setGoon);
+			while (goon == 0);
+			printf("[%d]\t%s\t\t%s\n", getpid(), RUNNING, inputBuff);
+			kill(getppid(), SIGUSR1);
+		} else {
+			signal(SIGUSR2,contFg);
+			signal(SIGTSTP,stopFg);
+		}
+		executeComplexCmd(cmd);
+		exit(0);
+	}
+	//free
 	free(cmd);
 }
