@@ -722,13 +722,13 @@ void executeComplexCmd(ComplexCmd *cmd) {
 		else {
 			if (pipe(pfd[1]) == -1) {
 				perror("pipe failed");
-				return;
+				exit(errno);
 			}
 		}
 		pid = fork();
 		if (pid < 0) {
 			perror("fork failed");
-			return;
+			exit(errno);
 		} else if (pid) {
 			if (pfd[0][0] != 0) close(pfd[0][0]);
 			if (pfd[1][1] != 1) close(pfd[1][1]);
