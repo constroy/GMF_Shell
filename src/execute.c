@@ -540,23 +540,23 @@ void execOuterCmd(SimpleCmd *cmd){
         if(pid == 0){ //子进程
             if(cmd->input != NULL){ //存在输入重定向
                 if((pipeIn = open(cmd->input, O_RDONLY, S_IRUSR|S_IWUSR)) == -1){
-                    printf("不能打开文件 %s！\n", cmd->input);
-                    exit(0);
+                    perror("不能打开文件！");
+                    exit(errno);
                 }
                 if(dup2(pipeIn, 0) == -1){
-                    printf("重定向标准输入错误！\n");
-                    exit(0);
+                    perror("重定向标准输入错误！");
+                    exit(errno);
                 }
             }
             
             if(cmd->output != NULL){ //存在输出重定向
                 if((pipeOut = open(cmd->output, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)) == -1){
-                    printf("不能打开文件 %s！\n", cmd->output);
-                    exit(0);
+                    perror("不能打开文件！");
+                    exit(errno);
                 }
                 if(dup2(pipeOut, 1) == -1){
-                    printf("重定向标准输出错误！\n");
-                    exit(0);
+                    perror("重定向标准输出错误！");
+                    exit(errno);
                 }
             }
             
@@ -570,8 +570,8 @@ void execOuterCmd(SimpleCmd *cmd){
             }
             justArgs(cmd->args[0]);
             if(execv(cmdBuff, cmd->args) < 0){ //执行命令
-                printf("execv failed!\n");
-                exit(0);
+                perror"execv failed!");
+                exit(errno);
             }
         }
 		else{ //父进程
