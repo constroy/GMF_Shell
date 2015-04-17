@@ -478,38 +478,26 @@ SimpleCmd* handleSimpleCmdStr(int begin, int end){
 
     glob_t gl[k];
     int total = 0;
-    for(i=0; i<k; i++)
+
+    for(i=0; i<k; i++)              // Acquare the length of cmd->args
     {
         gl[i].gl_offs = 0;
-        glob(buff[i], GLOB_DOOFFS, NULL, &gl[i]);
-        if(gl[i].gl_pathc == 0)
-            total++;
-        else
+        glob(buff[i], GLOB_NOCHECK, NULL, &gl[i]);
             total += gl[i].gl_pathc;
     }
 
-    cmd->args = (char**)malloc(sizeof(char*) * (total + 1));
+    cmd->args = (char**)malloc(sizeof(char*) * (total + 1));    //malloc a cmd->args arrording to total
     cmd->args[total] = NULL;
-    int lhb_begin = 0;                  //From the first to assignment, arrangment: 1-->total
+    int lhb_begin = 0;              //From the first to assignment, arrangment: 1-->total
     int tmp = 0;
-    for(i=0; i<k; i++)              //The number of gl is k
+    for(i=0; i<k; i++)              //The number of gl[] is k
     {
-        if(gl[i].gl_pathc == 0)     //If not match
+        for(tmp=0; tmp<gl[i].gl_pathc; tmp++)
         {
-            j = strlen(buff[i]);
-            cmd->args[lhb_begin] = (char*)malloc(sizeof(char) * (j + 1));   
-            strcpy(cmd->args[lhb_begin], buff[i]);
+            j = strlen(gl[i].gl_pathv[tmp]);
+            cmd->args[lhb_begin] = (char*)malloc(sizeof(char) * (j + 1));
+            strcpy(cmd->args[lhb_begin], gl[i].gl_pathv[tmp]);
             lhb_begin++;
-        }
-        else                        //If match
-        {
-            for(tmp=0; tmp<gl[i].gl_pathc; tmp++)
-            {
-                j = strlen(gl[i].gl_pathv[tmp]);
-                cmd->args[lhb_begin] = (char*)malloc(sizeof(char) * (j + 1));
-                strcpy(cmd->args[lhb_begin], gl[i].gl_pathv[tmp]);
-                lhb_begin++;
-            }
         }
         globfree(&gl[i]);
     }
