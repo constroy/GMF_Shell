@@ -693,9 +693,7 @@ void executeComplexCmd(ComplexCmd *cmd) {
 	int pfd[2][2]={{0,1},{0,1}};
 	
 	for (i = 0; i<cmd->num; ++i) {
-		if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) { //exit
-			exit(0);
-		}
+		if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) exit(0);//exit
 		if (i == cmd->num - 1) {
 			pfd[1][1] = 1;
 		}
@@ -725,9 +723,7 @@ void executeComplexCmd(ComplexCmd *cmd) {
 	if (pfd[0][0] != 0) close(pfd[0][0]);
 	
 	//wait for all child processes to exit
-	while ((pid=wait(NULL))>0) {
-		continue;
-	}
+	while ((pid=wait(NULL))>0);
 
 	//free *cmds[]
 	for (i = 0; i<cmd->num; ++i) {
