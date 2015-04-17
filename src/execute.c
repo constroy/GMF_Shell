@@ -578,7 +578,7 @@ void execOuterCmd(SimpleCmd *cmd){
             if(cmd->isBack){ //后台命令             
                 fgPid = 0; //pid置0，为下一命令做准备
                 addJob(pid); //增加新的作业
-		sleep(1);
+				sleep(1);
                 kill(pid, SIGUSR1); //子进程发信号，表示作业已加入
                 
                 //等待子进程输出
@@ -591,7 +591,7 @@ void execOuterCmd(SimpleCmd *cmd){
             }
 		}
     }else{ //命令不存在
-        printf("找不到命令 15%s\n", inputBuff);
+        printf("找不到命令 %s\n", inputBuff);
     }
 }
 
@@ -692,44 +692,54 @@ void executeComplexCmd(ComplexCmd *cmd) {
 	int i;
 	pid_t pid;
 	int pfd[2][2]={{0,1},{0,1}};
-	
-	for (i = 0; i<cmd->num; ++i) {
-		if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) exit(0);//exit
-		if (i == cmd->num - 1) {
-			pfd[1][1] = 1;
+
+	if ((pid = fork()) < 0) {
+		perror("fork failed");
+		exit(errno);
+    }
+    if (pid)
+	{
+		if (cmd->isBack) {
+			signal(SIGUSR1,setGoon);
+			while(goon == 0);
+			kill(getppid(), SIGUSR1);
 		}
-		else {
-			if (pipe(pfd[1]) == -1) {
-				perror("pipe failed");
+		for (i = 0; i<cmd->num; ++i) {
+			if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) exit(0);//exit
+			if (i == cmd->num - 1) {
+				pfd[1][1] = 1;
+			}
+			else {
+				if (pipe(pfd[1]) == -1) {
+					perror("pipe failed");
+					exit(errno);
+				}
+			}
+			pid = fork();
+			if (pid < 0) {
+				perror("fork failed");
 				exit(errno);
+			} else if (pid) {
+				if (pfd[0][0] != 0) close(pfd[0][0]);
+				if (pfd[1][1] != 1) close(pfd[1][1]);
+				pfd[0][0]=pfd[1][0];
+			} else {
+				dup2(pfd[0][0],0);
+				dup2(pfd[1][1],1);
+				execSimpleCmd(cmd->cmds[i]);
+				close(pfd[0][0]);
+				close(pfd[1][1]);
+				exit(0);
 			}
 		}
-		pid = fork();
-		if (pid < 0) {
-			perror("fork failed");
-			exit(errno);
-		} else if (pid) {
-			if (pfd[0][0] != 0) close(pfd[0][0]);
-			if (pfd[1][1] != 1) close(pfd[1][1]);
-			pfd[0][0]=pfd[1][0];
-		} else {
-			dup2(pfd[0][0],0);
-			dup2(pfd[1][1],1);
-			execSimpleCmd(cmd->cmds[i]);
-			close(pfd[0][0]);
-			close(pfd[1][1]);
-			exit(0);
-		}
+		if (pfd[0][0] != 0) close(pfd[0][0]);
+		//wait for all child processes to exit
+		while ((pid=wait(NULL))>0);
+	} else {
+		
 	}
-	if (pfd[0][0] != 0) close(pfd[0][0]);
-	
-	//wait for all child processes to exit
-	while ((pid=wait(NULL))>0);
-
 	//free *cmds[]
-	for (i = 0; i<cmd->num; ++i) {
-		free(cmd->cmds[i]);
-	}
+	for (i = 0; i<cmd->num; ++i) free(cmd->cmds[i]);
 }
 /*******************************************************
                      命令执行接口
