@@ -465,7 +465,7 @@ SimpleCmd* handleSimpleCmdStr(int begin, int end){
             k++;
         }
     }
-    
+ //==================================================================================   
 	//依次为命令名及其各个参数赋值
     // cmd->args = (char**)malloc(sizeof(char*) * (k + 1));
     // cmd->args[k] = NULL;
@@ -475,35 +475,27 @@ SimpleCmd* handleSimpleCmdStr(int begin, int end){
     //     strcpy(cmd->args[i], buff[i]);
     // }
 
-
-    glob_t gl[k];
-    int total = 0;
+    glob_t gl;    gl.gl_offs = 0;
 
     for(i=0; i<k; i++)              // Acquare the length of cmd->args
     {
-        gl[i].gl_offs = 0;
-        glob(buff[i], GLOB_NOCHECK, NULL, &gl[i]);
-            total += gl[i].gl_pathc;
+        if(i == 0)
+        	glob(buff[i], GLOB_NOCHECK | GLOB_DOOFFS, NULL, &gl);
+        else
+        	glob(buff[i], GLOB_NOCHECK | GLOB_DOOFFS | GLOB_APPEND, NULL, &gl);
     }
 
-    cmd->args = (char**)malloc(sizeof(char*) * (total + 1));    //malloc a cmd->args arrording to total
-    cmd->args[total] = NULL;
-    int lhb_begin = 0;              //From the first to assignment, arrangment: 1-->total
-    int tmp = 0;
-    for(i=0; i<k; i++)              //The number of gl[] is k
+    cmd->args = (char**)malloc(sizeof(char*) * (gl.gl_pathc + 1));    //malloc a cmd->args arrording to total
+    cmd->args[gl.gl_pathc] = NULL;
+    for(i=0; i<gl.gl_pathc; i++)              //The number of gl[] is gl.gl_pathc
     {
-        for(tmp=0; tmp<gl[i].gl_pathc; tmp++)
-        {
-            j = strlen(gl[i].gl_pathv[tmp]);
-            cmd->args[lhb_begin] = (char*)malloc(sizeof(char) * (j + 1));
-            strcpy(cmd->args[lhb_begin], gl[i].gl_pathv[tmp]);
-            lhb_begin++;
-        }
-        globfree(&gl[i]);
+        j = strlen(gl.gl_pathv[i]);
+        cmd->args[i] = (char*)malloc(sizeof(char) * (j + 1));
+        strcpy(cmd->args[i], gl.gl_pathv[i]);
     }
+    globfree(&gl);
+ //==================================================================================  
 
-
-    
 	//如果有输入重定向文件，则为命令的输入重定向变量赋值
     if(strlen(inputFile) != 0){
         j = strlen(inputFile);
