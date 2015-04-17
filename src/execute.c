@@ -540,7 +540,7 @@ void execOuterCmd(SimpleCmd *cmd){
         if(pid == 0){ //子进程
             if(cmd->input != NULL){ //存在输入重定向
                 if((pipeIn = open(cmd->input, O_RDONLY, S_IRUSR|S_IWUSR)) == -1){
-                    perror("不能打开文件！");
+                    fprintf(stderr, "不能打开文件%s！\n", cmd->input);
                     exit(errno);
                 }
                 if(dup2(pipeIn, 0) == -1){
@@ -551,7 +551,7 @@ void execOuterCmd(SimpleCmd *cmd){
             
             if(cmd->output != NULL){ //存在输出重定向
                 if((pipeOut = open(cmd->output, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)) == -1){
-                    perror("不能打开文件！");
+                    fprintf(stderr, "不能打开文件%s！\n", cmd->output);
                     exit(errno);
                 }
                 if(dup2(pipeOut, 1) == -1){
@@ -570,7 +570,7 @@ void execOuterCmd(SimpleCmd *cmd){
             }
             justArgs(cmd->args[0]);
             if(execv(cmdBuff, cmd->args) < 0){ //执行命令
-                perror"execv failed!");
+                perror("execv failed!");
                 exit(errno);
             }
         }
