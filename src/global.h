@@ -8,7 +8,6 @@ extern "C" {
     #define HISTORY_LEN 10
     
     #define STOPPED "stopped"
-    #define KILLED  "killed"
     #define RUNNING "running"
     #define DONE    "done"
 
