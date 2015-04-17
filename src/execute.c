@@ -1,6 +1,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <glob.h>
 #include <fcntl.h>
 #include <math.h>
 #include <errno.h>
@@ -360,6 +361,7 @@ void init(){
     
 }
 
+
 /*******************************************************
                       命令解析
 ********************************************************/
@@ -465,13 +467,54 @@ SimpleCmd* handleSimpleCmdStr(int begin, int end){
     }
     
 	//依次为命令名及其各个参数赋值
-    cmd->args = (char**)malloc(sizeof(char*) * (k + 1));
-    cmd->args[k] = NULL;
-    for(i = 0; i<k; i++){
-        j = strlen(buff[i]);
-        cmd->args[i] = (char*)malloc(sizeof(char) * (j + 1));   
-        strcpy(cmd->args[i], buff[i]);
+    // cmd->args = (char**)malloc(sizeof(char*) * (k + 1));
+    // cmd->args[k] = NULL;
+    // for(i = 0; i<k; i++){
+    //     j = strlen(buff[i]);
+    //     cmd->args[i] = (char*)malloc(sizeof(char) * (j + 1));   
+    //     strcpy(cmd->args[i], buff[i]);
+    // }
+
+
+    glob_t gl[k];
+    int total = 0;
+    for(i=0; i<k; i++)
+    {
+        gl[i].gl_offs = 0;
+        glob(buff[i], GLOB_DOOFFS, NULL, &gl[i]);
+        if(gl[i].gl_pathc == 0)
+            total++;
+        else
+            total += gl[i].gl_pathc;
     }
+
+    cmd->args = (char**)malloc(sizeof(char*) * (total + 1));
+    cmd->args[total] = NULL;
+    int lhb_begin = 0;                  //From the first to assignment, arrangment: 1-->total
+    int tmp = 0;
+    for(i=0; i<k; i++)              //The number of gl is k
+    {
+        if(gl[i].gl_pathc == 0)     //If not match
+        {
+            j = strlen(buff[i]);
+            cmd->args[lhb_begin] = (char*)malloc(sizeof(char) * (j + 1));   
+            strcpy(cmd->args[lhb_begin], buff[i]);
+            lhb_begin++;
+        }
+        else                        //If match
+        {
+            for(tmp=0; tmp<gl[i].gl_pathc; tmp++)
+            {
+                j = strlen(gl[i].gl_pathv[tmp]);
+                cmd->args[lhb_begin] = (char*)malloc(sizeof(char) * (j + 1));
+                strcpy(cmd->args[lhb_begin], gl[i].gl_pathv[tmp]);
+                lhb_begin++;
+            }
+        }
+        globfree(&gl[i]);
+    }
+
+
     
 	//如果有输入重定向文件，则为命令的输入重定向变量赋值
     if(strlen(inputFile) != 0){
