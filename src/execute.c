@@ -588,9 +588,7 @@ void execOuterCmd(SimpleCmd *cmd){
                 printf("[%d]\t%s\t\t%s\n", getpid(), RUNNING, inputBuff);
                 kill(getppid(), SIGUSR1);
             }
-            //puts("000child");
             justArgs(cmd->args[0]);
-            //puts("111child");
             if(execv(cmdBuff, cmd->args) < 0){ //执行命令
                 printf("execv failed!\n");
                 exit(0);
@@ -608,10 +606,7 @@ void execOuterCmd(SimpleCmd *cmd){
                 goon = 0;
             }else{ //非后台命令
                 fgPid = pid;
-                //printf("ffpid:%d\n",pid);
-                waitpid(pid, NULL, 0);
-               //printf("wwpid:%d\n",pid);
-                
+                waitpid(pid, NULL, 0); 
             }
 		}
     }else{ //命令不存在
@@ -625,9 +620,7 @@ void execSimpleCmd(SimpleCmd *cmd){
     char *temp;
     Job *now = NULL;
     
-    if(strcmp(cmd->args[0], "exit") == 0) { //exit命令
-        exit(0);
-    } else if (strcmp(cmd->args[0], "history") == 0) { //history命令
+    if (strcmp(cmd->args[0], "history") == 0) { //history命令
         if(history.end == -1){
             printf("尚未执行任何命令\n");
             return;
@@ -720,6 +713,9 @@ void executeComplexCmd(ComplexCmd *cmd) {
 	int pfd[2][2]={{0,1},{0,1}};
 	
 	for (i = 0; i<cmd->num; ++i) {
+		if(strcmp(cmd->cmds[i]->args[0], "exit") == 0) { //exit
+			exit(0);
+		}
 		if (i == cmd->num - 1) {
 			pfd[1][1] = 1;
 		}
@@ -730,15 +726,13 @@ void executeComplexCmd(ComplexCmd *cmd) {
 			}
 		}
 		pid = fork();
-		//printf("fpid:%d\n",pid);
 		if (pid < 0) {
 			perror("fork failed");
 			return;
 		} else if (pid) {
 			if (pfd[0][0] != 0) close(pfd[0][0]);
-			if (pfd[0][1] != 1) close(pfd[0][1]);
+			if (pfd[1][1] != 1) close(pfd[1][1]);
 			pfd[0][0]=pfd[1][0];
-			pfd[0][1]=pfd[1][1];
 		} else {
 			dup2(pfd[0][0],0);
 			dup2(pfd[1][1],1);
@@ -748,22 +742,14 @@ void executeComplexCmd(ComplexCmd *cmd) {
 			exit(0);
 		}
 	}
-	//puts("1!!!");
+	if (pfd[0][0] != 0) close(pfd[0][0]);
+	
+	//wait for all child processes to exit
 	while ((pid=wait(NULL))>0) {
-		//printf("wpid:%d\n",pid);
 		continue;
 	}
-	//puts("2!!!");
-	
-	/*
-	while ((i=read(pfd[0][0],buff,sizeof(buff)))>0) {
-		write(1,buff,i);
-	}
-	*/
-	//puts("!!!");while (1) sleep(10);
-	//write(1,"!!!",3);
-	//printf("pfd: %d\n",pfd[0][1]);
-	
+
+	//free *cmds[]
 	for (i = 0; i<cmd->num; ++i) {
 		free(cmd->cmds[i]);
 	}
@@ -776,5 +762,5 @@ void execute(){
 	//execSimpleCmd(cmd);
 	ComplexCmd *cmd = handleComplexCmdStr(0,strlen(inputBuff));
 	executeComplexCmd(cmd);
-	free(cmd);//puts("!!!");while (1);
+	free(cmd);
 }
