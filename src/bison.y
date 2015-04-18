@@ -22,9 +22,11 @@ fgCommand       :   complexCmd
 ;
 
 complexCmd 	:   simpleCmd pipeCmd
+;
 
 pipeCmd		:   /*empty*/
 		    |pipeCmd '|' simpleCmd
+;
 
 simpleCmd       :   progInvocation inputRedirect outputRedirect
 ;
