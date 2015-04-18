@@ -648,7 +648,6 @@ void *handleComplexCmdStr(int begin,int end) {
 	}
 	return cmd;
 }
-
 //execute a set of CMDs by constroy
 void executeComplexCmd(ComplexCmd *cmd) {
 	int i;
@@ -691,7 +690,6 @@ void executeComplexCmd(ComplexCmd *cmd) {
 	//free cmds[]
 	for (i = 0; i<cmd->num; ++i) free(cmd->cmds[i]);
 }
-void contFg();
 void stopFg()
 {
 	int i;
@@ -728,8 +726,11 @@ void execute(){
 		}
 	} else {
 		cidCnt = 0;
+		
 		if (cmd->isBack) {
 			signal(SIGUSR1,setGoon);
+			signal(SIGTSTP,NULL);
+			signal(SIGINT,NULL);
 			while (goon == 0);
 			printf("[%d]\t%s\t\t%s\n", getpid(), RUNNING, inputBuff);
 			kill(getppid(), SIGUSR1);
